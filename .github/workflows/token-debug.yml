@@ -1,0 +1,16 @@
+name: Test Debugger Action
+on:
+  workflow_dispatch:
+
+jobs:
+  oidc_debug_test:
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    name: A test of the oidc debugger
+    steps:
+      - name: Debug OIDC Claims
+        uses: steve-todorov/oidc-debugger-action@b6d83b24a379e77233fb6b26f1c1a662c4bf443c # v1.0.2
+        with:
+          audience: '${{ github.server_url }}/${{ github.repository }}'
