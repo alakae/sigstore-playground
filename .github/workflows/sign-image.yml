@@ -7,6 +7,8 @@ permissions:
   contents: read
   packages: write   # governs secrets.GITHUB_TOKEN's ability to push to GHCR
   id-token: write    # governs whether the OIDC ID token can be minted at all
+  attestations: write        # actions/attest needs this to persist attestations
+  artifact-metadata: write   # actions/attest needs this to record the artifact
 jobs:
   build-and-sign:
     runs-on: ubuntu-latest
@@ -47,3 +49,26 @@ jobs:
 
       - name: Sign the image
         run: cosign sign --yes -d ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+
+      - name: Attest build provenance
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+
+      - name: Attest SBOM
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
