@@ -7,6 +7,10 @@ attestations. Throwaway — no production use.
 
 1. `sign-test.yml` — signs a text file with `cosign sign-blob`, keyless via GitHub
    OIDC → Fulcio → Rekor. Verify with `cosign verify-blob`.
+1. `sign-checksums.yml` — idiomatic multi-artifact pattern: generates `checksums.txt`
+   with `sha256sum`, signs only that file, uploads artifacts + bundle. One signature
+   covers all artifacts; verify with `cosign verify-blob` on `checksums.txt`, then
+   `sha256sum -c checksums.txt` for the rest.
 1. `sign-test-broken.yml` — same, minus `id-token: write`. Doesn't fail cleanly:
    cosign falls back to interactive device-flow OAuth and hangs instead of erroring.
 1. `token-debug.yml` — dumps the raw OIDC token's claims (via
