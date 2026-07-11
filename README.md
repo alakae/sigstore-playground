@@ -19,6 +19,13 @@ attestations. Throwaway — no production use.
 1. `sign-image.yml` — signs a real container image on GHCR with `cosign sign`, plus
    SLSA build provenance and an SPDX SBOM via `actions/attest`. Verify with
    `cosign verify` / `cosign tree` / `gh attestation verify`.
+1. `custom-attestation.yml` — attests a blob with a fully custom predicate type
+   (`https://github.com/alakae/sigstore-playground/nothing/v1`) and a hand-written
+   JSON payload. Demonstrates that any arbitrary JSON can be attested; the type URI
+   is just an identifier the verifier uses to interpret the content. Verify with
+   `cosign verify-blob-attestation --bundle attestation.bundle --type <uri> \`
+   `--certificate-identity-regexp '...' --certificate-oidc-issuer '...' artifact.txt`.
+   Inspect the payload: `cat attestation.bundle | jq -r '.dsseEnvelope.payload' | base64 -d | jq .`.
 
 ## Things learned here worth remembering
 
@@ -31,3 +38,11 @@ attestations. Throwaway — no production use.
   `--predicate-type` explicit, or it's silently never checked.
 - Buildx auto-attaches its own provenance unless `provenance: false` is set, which
   breaks `docker pull` and shadows the real image tag with an attestation manifest.
+- Sigstore signs *what was said*, not whether it's true. The signature proves "identity
+  X attested this content"; the predicate fields (repo, commit, builder) are trusted
+  verbatim. Platforms like `actions/attest-build-provenance` fill them from the OIDC
+  token and runner context (trusted source). Hand-writing them yourself makes you the
+  source of truth — fine for custom claims where you're the authority, not for provenance.
+- Custom predicate types are just URIs — no schema registration needed. Pick a URI that
+  you control and put any JSON you want in the payload. `--type slsaprovenance` is just
+  shorthand for `https://slsa.dev/provenance/v1`.
