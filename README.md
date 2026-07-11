@@ -46,3 +46,7 @@ attestations. Throwaway — no production use.
 - Custom predicate types are just URIs — no schema registration needed. Pick a URI that
   you control and put any JSON you want in the payload. `--type slsaprovenance` is just
   shorthand for `https://slsa.dev/provenance/v1`.
+- `--certificate-identity` matches the Subject Alternative Name (SAN) of the Fulcio cert —
+  typically the workflow file + ref (branch or tag). A branch ref is a moving target; for
+  immutable pinning use a tag ref or add `--certificate-github-workflow-sha` to lock to a
+  specific commit.
