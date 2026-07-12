@@ -116,13 +116,16 @@ jobs:
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 
-          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner ${{ github.repository_owner }}"
+          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner ${{ github.repository_owner }} --predicate-type https://slsa.dev/provenance/v1"
           # `gh attestation download` has no output-file flag; `-o` is the
           # shorthand for --owner. It writes to a file named after the subject
           # digest (sha256:<hex>.jsonl) in the current directory. Clear any stale
-          # copy first so a later step can't pick up an earlier download.
+          # copy first so a later step can't pick up an earlier download. Filter
+          # by predicate type so the file holds only the provenance, not the SBOM
+          # attestation that shares this digest.
           rm -f "sha256:${DIGEST_HEX}.jsonl"
-          gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner "${{ github.repository_owner }}"
+          gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner "${{ github.repository_owner }}" \
+            --predicate-type https://slsa.dev/provenance/v1
 
           # Take the first Sigstore bundle line for cosign.
           head -n1 "sha256:${DIGEST_HEX}.jsonl" > provenance.bundle
