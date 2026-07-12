@@ -1,7 +1,12 @@
 name: custom-attestation
 
 on:
+  # Only re-run when this workflow itself changes, plus manual dispatch. This
+  # keeps the signing chain exercised without writing to the production Rekor
+  # log on every unrelated commit.
   push:
+    paths:
+      - '.github/workflows/custom-attestation.yml'
   workflow_dispatch:
 
 jobs:
