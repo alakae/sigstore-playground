@@ -63,11 +63,10 @@ jobs:
             --bundle checksums.txt.bundle \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-checksums.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --output-certificate cert.pem \
             checksums.txt
 
           echo "=== Rekor entry ==="
           echo "https://search.sigstore.dev/?logIndex=$(cat checksums.txt.bundle | jq '.rekorBundle.logIndex')"
 
           echo "=== Cert: identity + validity ==="
-          openssl x509 -noout -ext subjectAltName -dates -in cert.pem
+          cat checksums.txt.bundle | jq -r '.cert' | base64 -d | openssl x509 -noout -ext subjectAltName -dates

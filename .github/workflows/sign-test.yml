@@ -54,11 +54,10 @@ jobs:
             --bundle test.txt.bundle \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-test.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --output-certificate cert.pem \
             test.txt
 
           echo "=== Rekor entry ==="
           echo "https://search.sigstore.dev/?logIndex=$(cat test.txt.bundle | jq '.rekorBundle.logIndex')"
 
           echo "=== Cert: identity + validity ==="
-          openssl x509 -noout -ext subjectAltName -dates -in cert.pem
+          cat test.txt.bundle | jq -r '.cert' | base64 -d | openssl x509 -noout -ext subjectAltName -dates
