@@ -5,17 +5,13 @@ attestations. Throwaway — no production use.
 
 ## What's here
 
-Seven workflows, each a self-contained sign/attest -> verify demo, ordered below
-by increasing complexity. The matrix shows what each signing workflow produces;
-one-liners and the two diagnostic workflows follow.
-
-| Workflow | Applies to | Signature | Attestation | SLSA provenance | SBOM | Custom predicate |
-|----------|------------|:---------:|:-----------:|:---------------:|:----:|:----------------:|
-| [`sign-test`](.github/workflows/sign-test.yml) | file | ✓ | | | | |
-| [`sign-checksums`](.github/workflows/sign-checksums.yml) | files (via `checksums.txt`) | ✓ | | | | |
-| [`attest-blob-provenance`](.github/workflows/attest-blob-provenance.yml) | file | | ✓ | ✓ | | |
-| [`custom-attestation`](.github/workflows/custom-attestation.yml) | file | | ✓ | | | ✓ |
-| [`sign-image`](.github/workflows/sign-image.yml) | image | ✓ | ✓ | ✓ | ✓ | |
+| Workflow | Status | Applies to | Signature | Attestation | SLSA provenance | SBOM | Custom predicate |
+|----------|:------:|------------|:---------:|:-----------:|:---------------:|:----:|:----------------:|
+| [`sign-test`](.github/workflows/sign-test.yml) | [![status](https://img.shields.io/github/actions/workflow/status/alakae/sigstore-playground/sign-test.yml?branch=main&label=)](https://github.com/alakae/sigstore-playground/actions/workflows/sign-test.yml) | file | ✓ | | | | |
+| [`sign-checksums`](.github/workflows/sign-checksums.yml) | [![status](https://img.shields.io/github/actions/workflow/status/alakae/sigstore-playground/sign-checksums.yml?branch=main&label=)](https://github.com/alakae/sigstore-playground/actions/workflows/sign-checksums.yml) | files (via `checksums.txt`) | ✓ | | | | |
+| [`attest-blob-provenance`](.github/workflows/attest-blob-provenance.yml) | [![status](https://img.shields.io/github/actions/workflow/status/alakae/sigstore-playground/attest-blob-provenance.yml?branch=main&label=)](https://github.com/alakae/sigstore-playground/actions/workflows/attest-blob-provenance.yml) | file | | ✓ | ✓ | | |
+| [`custom-attestation`](.github/workflows/custom-attestation.yml) | [![status](https://img.shields.io/github/actions/workflow/status/alakae/sigstore-playground/custom-attestation.yml?branch=main&label=)](https://github.com/alakae/sigstore-playground/actions/workflows/custom-attestation.yml) | file | | ✓ | | | ✓ |
+| [`sign-image`](.github/workflows/sign-image.yml) | [![status](https://img.shields.io/github/actions/workflow/status/alakae/sigstore-playground/sign-image.yml?branch=main&label=)](https://github.com/alakae/sigstore-playground/actions/workflows/sign-image.yml) | image | ✓ | ✓ | ✓ | ✓ | |
 
 - [`sign-test`](.github/workflows/sign-test.yml) — minimal keyless loop:
   `cosign sign-blob` on a text file (GitHub OIDC → Fulcio → Rekor), verified with
