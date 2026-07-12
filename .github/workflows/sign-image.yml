@@ -1,17 +1,20 @@
 name: sign-image
 
 on:
+  push:
   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: write   # governs secrets.GITHUB_TOKEN's ability to push to GHCR
-  id-token: write    # governs whether the OIDC ID token can be minted at all
-  attestations: write        # actions/attest needs this to persist attestations
-  artifact-metadata: write   # actions/attest needs this to record the artifact
 jobs:
   build-and-sign:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Write a trivial Dockerfile
         run: |
@@ -72,3 +75,76 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           sbom-path: sbom.spdx.json
           push-to-registry: true
+
+  verify:
+    needs: build-and-sign
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Verify image signature
+        run: |
+          cosign verify \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-image.yml@${{ github.ref }}" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} | jq '.[0].optional'
+
+          echo "=== Attached signatures + attestations ==="
+          cosign tree ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }}
+
+      - name: Verify SLSA provenance (gh)
+        run: |
+          gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
+            --repo ${{ github.repository }}
+
+      - name: Verify SLSA provenance (gh download + cosign)
+        run: |
+          DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
+
+          gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
+            --repo ${{ github.repository }} \
+            -o provenance.bundle
+
+          cosign verify-blob-attestation \
+            --bundle provenance.bundle \
+            --new-bundle-format \
+            --type slsaprovenance \
+            --digest "$DIGEST_HEX" \
+            --digestAlg sha256 \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-image.yml@${{ github.ref }}" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+      - name: Verify SBOM attestation (gh)
+        run: |
+          gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
+            --repo ${{ github.repository }} \
+            --predicate-type https://spdx.dev/Document
+
+      - name: Verify SBOM attestation (gh download + cosign)
+        run: |
+          DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
+
+          gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
+            --repo ${{ github.repository }} \
+            --predicate-type https://spdx.dev/Document \
+            -o sbom.bundle
+
+          cosign verify-blob-attestation \
+            --bundle sbom.bundle \
+            --new-bundle-format \
+            --type https://spdx.dev/Document \
+            --digest "$DIGEST_HEX" \
+            --digestAlg sha256 \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-image.yml@${{ github.ref }}" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
