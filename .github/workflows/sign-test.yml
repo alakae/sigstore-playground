@@ -57,7 +57,7 @@ jobs:
             test.txt
 
           echo "=== Rekor entry ==="
-          echo "https://search.sigstore.dev/?logIndex=$(cat test.txt.bundle | jq '.rekorBundle.logIndex')"
+          echo "https://search.sigstore.dev/?logIndex=$(cat test.txt.bundle | jq -r '.verificationMaterial.tlogEntries[0].logIndex')"
 
           echo "=== Cert: identity + validity ==="
-          cat test.txt.bundle | jq -r '.cert' | base64 -d | openssl x509 -noout -ext subjectAltName -dates
+          cat test.txt.bundle | jq -r '.verificationMaterial.certificate.rawBytes' | base64 -d | openssl x509 -inform DER -noout -ext subjectAltName -dates

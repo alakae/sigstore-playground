@@ -61,5 +61,4 @@ jobs:
             artifact.txt
 
           echo "=== Cert: identity + validity ==="
-          CERT=$(cat provenance.bundle | jq -r '.cert' | base64 -d)
-          echo "$CERT" | openssl x509 -noout -ext subjectAltName -dates
+          cat provenance.bundle | jq -r '.verificationMaterial.certificate.rawBytes' | base64 -d | openssl x509 -inform DER -noout -ext subjectAltName -dates

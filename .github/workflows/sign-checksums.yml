@@ -66,7 +66,7 @@ jobs:
             checksums.txt
 
           echo "=== Rekor entry ==="
-          echo "https://search.sigstore.dev/?logIndex=$(cat checksums.txt.bundle | jq '.rekorBundle.logIndex')"
+          echo "https://search.sigstore.dev/?logIndex=$(cat checksums.txt.bundle | jq -r '.verificationMaterial.tlogEntries[0].logIndex')"
 
           echo "=== Cert: identity + validity ==="
-          cat checksums.txt.bundle | jq -r '.cert' | base64 -d | openssl x509 -noout -ext subjectAltName -dates
+          cat checksums.txt.bundle | jq -r '.verificationMaterial.certificate.rawBytes' | base64 -d | openssl x509 -inform DER -noout -ext subjectAltName -dates

@@ -74,4 +74,4 @@ jobs:
             artifact.txt
 
           echo "=== Rekor entry (cert details visible in UI) ==="
-          echo "https://search.sigstore.dev/?logIndex=$(cat attestation.bundle | jq '.rekorBundle.logIndex')"
+          echo "https://search.sigstore.dev/?logIndex=$(cat attestation.bundle | jq -r '.verificationMaterial.tlogEntries[0].logIndex')"
