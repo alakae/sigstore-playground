@@ -107,6 +107,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          echo "# locally: gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --repo ${{ github.repository }}"
           gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }}
 
       - name: Verify SLSA provenance (gh download + cosign)
@@ -115,6 +116,7 @@ jobs:
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 
+          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --repo ${{ github.repository }} -o provenance.bundle"
           gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
             -o provenance.bundle
 
@@ -131,6 +133,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          echo "# locally: gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --repo ${{ github.repository }} --predicate-type https://spdx.dev/Document"
           gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
             --predicate-type https://spdx.dev/Document
 
@@ -140,6 +143,7 @@ jobs:
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 
+          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --repo ${{ github.repository }} --predicate-type https://spdx.dev/Document -o sbom.bundle"
           gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
             --predicate-type https://spdx.dev/Document \
             -o sbom.bundle
