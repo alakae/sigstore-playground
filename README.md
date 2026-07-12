@@ -5,31 +5,42 @@ attestations. Throwaway — no production use.
 
 ## What's here
 
-1. `sign-test.yml` — signs a text file with `cosign sign-blob`, keyless via GitHub
-   OIDC → Fulcio → Rekor. Verify with `cosign verify-blob`.
-1. `sign-checksums.yml` — idiomatic multi-artifact pattern: generates `checksums.txt`
-   with `sha256sum`, signs only that file, uploads artifacts + bundle. One signature
-   covers all artifacts; verify with `cosign verify-blob` on `checksums.txt`, then
-   `sha256sum -c checksums.txt` for the rest.
-1. `sign-test-broken.yml` — same, minus `id-token: write`. Doesn't fail cleanly:
-   cosign falls back to interactive device-flow OAuth and hangs instead of erroring.
-1. `token-debug.yml` — dumps the raw OIDC token's claims (via
-   `steve-todorov/oidc-debugger-action`) to see what actually ends up in the Fulcio
-   certificate.
-1. `sign-image.yml` — signs a real container image on GHCR with `cosign sign`, plus
-   SLSA build provenance and an SPDX SBOM via `actions/attest`. Verify with
-   `cosign verify` / `cosign tree` / `gh attestation verify`.
-1. `attest-blob-provenance.yml` — SLSA build provenance on a plain file via `actions/attest`,
-   demonstrating it is not image-specific. Uses `subject-path` for local files (digest computed
-   automatically). Verify with `gh attestation verify artifact.txt --repo alakae/sigstore-playground`
-   or `gh attestation download` + `cosign verify-blob-attestation`.
-1. `custom-attestation.yml` — attests a blob with a fully custom predicate type
-   (`https://github.com/alakae/sigstore-playground/nothing/v1`) and a hand-written
-   JSON payload. Demonstrates that any arbitrary JSON can be attested; the type URI
-   is just an identifier the verifier uses to interpret the content. Verify with
-   `cosign verify-blob-attestation --bundle attestation.bundle --type <uri> \`
-   `--certificate-identity-regexp '...' --certificate-oidc-issuer '...' artifact.txt`.
-   Inspect the payload: `cat attestation.bundle | jq -r '.dsseEnvelope.payload' | base64 -d | jq .`.
+Seven workflows, each a self-contained sign/attest -> verify demo, ordered below
+by increasing complexity. The matrix shows what each signing workflow produces;
+one-liners and the two diagnostic workflows follow.
+
+| Workflow | Applies to | Signature | Attestation | SLSA provenance | SBOM | Custom predicate |
+|----------|------------|:---------:|:-----------:|:---------------:|:----:|:----------------:|
+| [`sign-test`](.github/workflows/sign-test.yml) | file | ✓ | | | | |
+| [`sign-checksums`](.github/workflows/sign-checksums.yml) | files (via `checksums.txt`) | ✓ | | | | |
+| [`attest-blob-provenance`](.github/workflows/attest-blob-provenance.yml) | file | | ✓ | ✓ | | |
+| [`custom-attestation`](.github/workflows/custom-attestation.yml) | file | | ✓ | | | ✓ |
+| [`sign-image`](.github/workflows/sign-image.yml) | image | ✓ | ✓ | ✓ | ✓ | |
+
+- [`sign-test`](.github/workflows/sign-test.yml) — minimal keyless loop:
+  `cosign sign-blob` on a text file (GitHub OIDC → Fulcio → Rekor), verified with
+  `cosign verify-blob`.
+- [`sign-checksums`](.github/workflows/sign-checksums.yml) — idiomatic
+  multi-artifact pattern: sign one `checksums.txt`, then `sha256sum -c` enforces
+  the artifacts against the signed manifest.
+- [`custom-attestation`](.github/workflows/custom-attestation.yml) — attests a
+  blob with a fully custom predicate type URI and a hand-written JSON payload;
+  the type URI is just an identifier the verifier uses to interpret the content.
+- [`attest-blob-provenance`](.github/workflows/attest-blob-provenance.yml) — SLSA
+  build provenance on a plain file, showing `actions/attest` is not image-specific
+  (`subject-path`).
+- [`sign-image`](.github/workflows/sign-image.yml) — signs a real GHCR container
+  image with `cosign sign`, plus SLSA build provenance and an SPDX SBOM via
+  `actions/attest` (stored in the GitHub Attestations API as well as Rekor).
+
+### Diagnostics / anti-patterns
+
+- [`sign-test-broken`](.github/workflows/sign-test-broken.yml) — same as
+  `sign-test` but without `id-token: write`. Doesn't fail cleanly: cosign falls
+  back to interactive device-flow OAuth and hangs.
+- [`token-debug`](.github/workflows/token-debug.yml) — dumps the raw OIDC token
+  claims (via `steve-todorov/oidc-debugger-action`) to see what lands in the
+  Fulcio certificate.
 
 ## Things learned here worth remembering
 
