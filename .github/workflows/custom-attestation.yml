@@ -40,10 +40,13 @@ jobs:
 
       - name: Inspect predicate (debug)
         run: |
-          echo "=== Raw predicate ==="
+          echo "::group::Raw predicate"
           cat predicate.json
-          echo "=== Decoded attestation payload ==="
+          echo "::endgroup::"
+
+          echo "::group::Decoded attestation payload"
           cat attestation.bundle | jq -r '.dsseEnvelope.payload' | base64 -d | jq .
+          echo "::endgroup::"
 
       - name: Upload artifacts + bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -71,12 +74,16 @@ jobs:
 
       - name: Verify attestation
         run: |
+          echo "::group::Verify attestation (cosign verify-blob-attestation)"
           cosign verify-blob-attestation \
             --bundle attestation.bundle \
             --type https://github.com/alakae/sigstore-playground/nothing/v1 \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/custom-attestation.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             artifact.txt
+          echo "✓ cosign verify-blob-attestation succeeded"
+          echo "::endgroup::"
 
-          echo "=== Rekor entry (cert details visible in UI) ==="
+          echo "::group::Rekor entry (cert details visible in UI)"
           echo "https://search.sigstore.dev/?logIndex=$(cat attestation.bundle | jq -r '.verificationMaterial.tlogEntries[0].logIndex')"
+          echo "::endgroup::"

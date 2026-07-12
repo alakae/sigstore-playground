@@ -100,20 +100,27 @@ jobs:
 
       - name: Verify image signature
         run: |
+          set -o pipefail  # so a cosign failure isn't masked by the jq pipe below
+          echo "::group::Verify image signature (cosign verify)"
           cosign verify \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-image.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} | jq '.[0].optional'
+          echo "✓ cosign verify succeeded"
+          echo "::endgroup::"
 
-          echo "=== Attached signatures + attestations ==="
+          echo "::group::Attached signatures + attestations (cosign tree)"
           cosign tree ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }}
+          echo "::endgroup::"
 
       - name: Verify SLSA provenance (gh)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "# locally: gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner ${{ github.repository_owner }}"
+          echo "::group::Verify SLSA provenance (gh attestation verify)"
           gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner "${{ github.repository_owner }}"
+          echo "✓ gh attestation verify (provenance) succeeded"
+          echo "::endgroup::"
 
       - name: Verify SLSA provenance (gh download + cosign)
         env:
@@ -121,7 +128,7 @@ jobs:
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 
-          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner ${{ github.repository_owner }} --predicate-type https://slsa.dev/provenance/v1"
+          echo "::group::Download provenance bundle (gh attestation download)"
           # `gh attestation download` has no output-file flag; `-o` is the
           # shorthand for --owner. It writes to a file named after the subject
           # digest (sha256:<hex>.jsonl) in the current directory. Clear any stale
@@ -134,7 +141,9 @@ jobs:
 
           # Take the first Sigstore bundle line for cosign.
           head -n1 "sha256:${DIGEST_HEX}.jsonl" > provenance.bundle
+          echo "::endgroup::"
 
+          echo "::group::Verify provenance with cosign"
           cosign verify-blob-attestation \
             --bundle provenance.bundle \
             --new-bundle-format \
@@ -143,14 +152,18 @@ jobs:
             --digestAlg sha256 \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-image.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          echo "✓ cosign verify-blob-attestation (provenance) succeeded"
+          echo "::endgroup::"
 
       - name: Verify SBOM attestation (gh)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "# locally: gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner ${{ github.repository_owner }} --predicate-type https://spdx.dev/Document/v2.3"
+          echo "::group::Verify SBOM attestation (gh attestation verify)"
           gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner "${{ github.repository_owner }}" \
             --predicate-type https://spdx.dev/Document/v2.3
+          echo "✓ gh attestation verify (SBOM) succeeded"
+          echo "::endgroup::"
 
       - name: Verify SBOM attestation (gh download + cosign)
         env:
@@ -158,7 +171,7 @@ jobs:
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 
-          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner ${{ github.repository_owner }} --predicate-type https://spdx.dev/Document/v2.3"
+          echo "::group::Download SBOM bundle (gh attestation download)"
           # `gh attestation download` has no output-file flag; `-o` is the
           # shorthand for --owner. It writes to a file named after the subject
           # digest (sha256:<hex>.jsonl) in the current directory. Clear the
@@ -171,7 +184,9 @@ jobs:
 
           # Take the first Sigstore bundle line for cosign.
           head -n1 "sha256:${DIGEST_HEX}.jsonl" > sbom.bundle
+          echo "::endgroup::"
 
+          echo "::group::Verify SBOM with cosign"
           cosign verify-blob-attestation \
             --bundle sbom.bundle \
             --new-bundle-format \
@@ -180,3 +195,5 @@ jobs:
             --digestAlg sha256 \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-image.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          echo "✓ cosign verify-blob-attestation (SBOM) succeeded"
+          echo "::endgroup::"

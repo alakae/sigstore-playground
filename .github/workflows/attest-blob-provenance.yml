@@ -51,13 +51,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "# locally: gh attestation verify artifact.txt --owner ${{ github.repository_owner }}"
+          echo "::group::Verify blob provenance (gh attestation verify)"
           gh attestation verify artifact.txt --owner "${{ github.repository_owner }}"
+          echo "✓ gh attestation verify succeeded"
+          echo "::endgroup::"
 
       - name: Verify attestation (gh download + cosign)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          echo "::group::Download provenance bundle (gh attestation download)"
           # `gh attestation download` has no output-file flag; `-o` is the
           # shorthand for --owner. It writes the attestations itself to a
           # JSON-lines file named after the artifact digest (sha256:<hex>.jsonl)
@@ -68,7 +71,9 @@ jobs:
           # cert inspection below.
           bundle_file=$(ls -- *.jsonl | head -n1)
           head -n1 "$bundle_file" > provenance.bundle
+          echo "::endgroup::"
 
+          echo "::group::Verify provenance with cosign"
           # The download uses the new Sigstore protobuf bundle format, so
           # cosign needs --new-bundle-format to parse it.
           cosign verify-blob-attestation \
@@ -78,6 +83,9 @@ jobs:
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/attest-blob-provenance.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             artifact.txt
+          echo "✓ cosign verify-blob-attestation succeeded"
+          echo "::endgroup::"
 
-          echo "=== Cert: identity + validity ==="
+          echo "::group::Certificate: identity + validity"
           cat provenance.bundle | jq -r '.verificationMaterial.certificate.rawBytes' | base64 -d | openssl x509 -inform DER -noout -ext subjectAltName -dates
+          echo "::endgroup::"

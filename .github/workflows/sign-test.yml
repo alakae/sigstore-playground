@@ -55,14 +55,19 @@ jobs:
 
       - name: Verify signature
         run: |
+          echo "::group::Verify signature (cosign verify-blob)"
           cosign verify-blob \
             --bundle test.txt.bundle \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-test.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             test.txt
+          echo "✓ cosign verify-blob succeeded"
+          echo "::endgroup::"
 
-          echo "=== Rekor entry ==="
+          echo "::group::Rekor entry"
           echo "https://search.sigstore.dev/?logIndex=$(cat test.txt.bundle | jq -r '.verificationMaterial.tlogEntries[0].logIndex')"
+          echo "::endgroup::"
 
-          echo "=== Cert: identity + validity ==="
+          echo "::group::Certificate: identity + validity"
           cat test.txt.bundle | jq -r '.verificationMaterial.certificate.rawBytes' | base64 -d | openssl x509 -inform DER -noout -ext subjectAltName -dates
+          echo "::endgroup::"
