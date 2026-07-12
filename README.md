@@ -46,6 +46,11 @@ attestations. Throwaway — no production use.
 - Custom predicate types are just URIs — no schema registration needed. Pick a URI that
   you control and put any JSON you want in the payload. `--type slsaprovenance` is just
   shorthand for `https://slsa.dev/provenance/v1`.
+- For GitHub Actions, the Fulcio cert extensions already answer most "how was it built"
+  questions (workflow, repo, SHA, trigger, runner). SLSA provenance adds value on top by
+  expressing *what went in* (resolved dependencies, source digest, external parameters) in
+  a build-system-agnostic schema — most relevant in heterogeneous environments with multiple
+  CI systems or third-party builders where a common format and policy evaluation is needed.
 - `--certificate-identity` matches the Subject Alternative Name (SAN) of the Fulcio cert —
   typically the workflow file + ref (branch or tag). A branch ref is a moving target; for
   immutable pinning use a tag ref or add `--certificate-github-workflow-sha` to lock to a
