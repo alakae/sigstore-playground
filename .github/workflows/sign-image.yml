@@ -116,9 +116,16 @@ jobs:
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 
-          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --repo ${{ github.repository }} -o provenance.bundle"
-          gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner "${{ github.repository_owner }}" \
-            -o provenance.bundle
+          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner ${{ github.repository_owner }}"
+          # `gh attestation download` has no output-file flag; `-o` is the
+          # shorthand for --owner. It writes to a file named after the subject
+          # digest (sha256:<hex>.jsonl) in the current directory. Clear any stale
+          # copy first so a later step can't pick up an earlier download.
+          rm -f "sha256:${DIGEST_HEX}.jsonl"
+          gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner "${{ github.repository_owner }}"
+
+          # Take the first Sigstore bundle line for cosign.
+          head -n1 "sha256:${DIGEST_HEX}.jsonl" > provenance.bundle
 
           cosign verify-blob-attestation \
             --bundle provenance.bundle \
@@ -143,10 +150,17 @@ jobs:
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 
-          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --repo ${{ github.repository }} --predicate-type https://spdx.dev/Document -o sbom.bundle"
+          echo "# locally: gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner ${{ github.repository_owner }} --predicate-type https://spdx.dev/Document"
+          # `gh attestation download` has no output-file flag; `-o` is the
+          # shorthand for --owner. It writes to a file named after the subject
+          # digest (sha256:<hex>.jsonl) in the current directory. Clear the
+          # provenance download from the earlier step so we only read the SBOM.
+          rm -f "sha256:${DIGEST_HEX}.jsonl"
           gh attestation download oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} --owner "${{ github.repository_owner }}" \
-            --predicate-type https://spdx.dev/Document \
-            -o sbom.bundle
+            --predicate-type https://spdx.dev/Document
+
+          # Take the first Sigstore bundle line for cosign.
+          head -n1 "sha256:${DIGEST_HEX}.jsonl" > sbom.bundle
 
           cosign verify-blob-attestation \
             --bundle sbom.bundle \

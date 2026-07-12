@@ -53,11 +53,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh attestation download artifact.txt --owner "${{ github.repository_owner }}" \
-            -o provenance.bundle
+          # `gh attestation download` has no output-file flag; `-o` is the
+          # shorthand for --owner. It writes the attestations itself to a
+          # JSON-lines file named after the artifact digest (sha256:<hex>.jsonl)
+          # in the current directory.
+          gh attestation download artifact.txt --owner "${{ github.repository_owner }}"
 
+          # Each line is a Sigstore bundle; take the first for cosign and the
+          # cert inspection below.
+          bundle_file=$(ls -- *.jsonl | head -n1)
+          head -n1 "$bundle_file" > provenance.bundle
+
+          # The download uses the new Sigstore protobuf bundle format, so
+          # cosign needs --new-bundle-format to parse it.
           cosign verify-blob-attestation \
             --bundle provenance.bundle \
+            --new-bundle-format \
             --type slsaprovenance \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/attest-blob-provenance.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
