@@ -104,11 +104,15 @@ jobs:
           cosign tree ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }}
 
       - name: Verify SLSA provenance (gh)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
             --repo ${{ github.repository }}
 
       - name: Verify SLSA provenance (gh download + cosign)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 
@@ -126,12 +130,16 @@ jobs:
             --certificate-oidc-issuer https://token.actions.githubusercontent.com
 
       - name: Verify SBOM attestation (gh)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh attestation verify oci://ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
             --repo ${{ github.repository }} \
             --predicate-type https://spdx.dev/Document
 
       - name: Verify SBOM attestation (gh download + cosign)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           DIGEST_HEX=$(echo "${{ needs.build-and-sign.outputs.digest }}" | sed 's/sha256://')
 

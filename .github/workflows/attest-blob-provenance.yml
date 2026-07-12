@@ -43,11 +43,15 @@ jobs:
 
 
       - name: Verify attestation (gh)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh attestation verify artifact.txt \
             --repo ${{ github.repository }}
 
       - name: Verify attestation (gh download + cosign)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh attestation download artifact.txt \
             --repo ${{ github.repository }} \
