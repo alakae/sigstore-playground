@@ -47,13 +47,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           echo "# locally: gh attestation verify artifact.txt --repo ${{ github.repository }}"
-          gh attestation verify artifact.txt
+          gh attestation verify artifact.txt --repo "${{ github.repository }}"
 
       - name: Verify attestation (gh download + cosign)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh attestation download artifact.txt \
+          gh attestation download artifact.txt --repo "${{ github.repository }}" \
             -o provenance.bundle
 
           cosign verify-blob-attestation \
