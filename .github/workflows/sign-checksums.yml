@@ -75,3 +75,9 @@ jobs:
 
           echo "=== Cert: identity + validity ==="
           cat checksums.txt.bundle | jq -r '.verificationMaterial.certificate.rawBytes' | base64 -d | openssl x509 -inform DER -noout -ext subjectAltName -dates
+
+      - name: Verify artifacts match the signed checksums
+        # Only meaningful after the signature check above: the signature proves
+        # checksums.txt is authentic, and this proves the artifacts match it.
+        # Without this the workflow signs a manifest it never actually enforces.
+        run: sha256sum --check checksums.txt
