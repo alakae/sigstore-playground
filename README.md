@@ -19,6 +19,10 @@ attestations. Throwaway — no production use.
 1. `sign-image.yml` — signs a real container image on GHCR with `cosign sign`, plus
    SLSA build provenance and an SPDX SBOM via `actions/attest`. Verify with
    `cosign verify` / `cosign tree` / `gh attestation verify`.
+1. `attest-blob-provenance.yml` — SLSA build provenance on a plain file via `actions/attest`,
+   demonstrating it is not image-specific. Uses `subject-path` for local files (digest computed
+   automatically). Verify with `gh attestation verify artifact.txt --repo alakae/sigstore-playground`
+   or `gh attestation download` + `cosign verify-blob-attestation`.
 1. `custom-attestation.yml` — attests a blob with a fully custom predicate type
    (`https://github.com/alakae/sigstore-playground/nothing/v1`) and a hand-written
    JSON payload. Demonstrates that any arbitrary JSON can be attested; the type URI
@@ -56,6 +60,8 @@ attestations. Throwaway — no production use.
   bundle in GitHub's Attestations API (fetch with `gh attestation download --repo <repo> --digest sha256:<digest>`);
   `cosign attest-blob` writes to the public Rekor log and produces a local `.bundle` file.
   Once you have the bundle, `cosign verify-blob-attestation --bundle` works for both.
+- `actions/attest` works on any artifact, not just images — use `subject-path` for local
+  files instead of `subject-name`/`subject-digest`.
 - `--certificate-identity` matches the Subject Alternative Name (SAN) of the Fulcio cert —
   typically the workflow file + ref (branch or tag). A branch ref is a moving target; for
   immutable pinning use a tag ref or add `--certificate-github-workflow-sha` to lock to a
