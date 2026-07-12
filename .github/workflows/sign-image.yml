@@ -130,7 +130,7 @@ jobs:
           cosign verify-blob-attestation \
             --bundle provenance.bundle \
             --new-bundle-format \
-            --type slsaprovenance \
+            --type slsaprovenance1 \
             --digest "$DIGEST_HEX" \
             --digestAlg sha256 \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/sign-image.yml@${{ github.ref }}" \

@@ -69,7 +69,7 @@ jobs:
           cosign verify-blob-attestation \
             --bundle provenance.bundle \
             --new-bundle-format \
-            --type slsaprovenance \
+            --type slsaprovenance1 \
             --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/attest-blob-provenance.yml@${{ github.ref }}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             artifact.txt
