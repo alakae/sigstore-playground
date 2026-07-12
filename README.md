@@ -51,6 +51,11 @@ attestations. Throwaway — no production use.
   expressing *what went in* (resolved dependencies, source digest, external parameters) in
   a build-system-agnostic schema — most relevant in heterogeneous environments with multiple
   CI systems or third-party builders where a common format and policy evaluation is needed.
+- `gh attestation verify` and `cosign verify-blob-attestation` are equivalent — the former
+  is just a convenience wrapper. They differ only in retrieval: `actions/attest` stores the
+  bundle in GitHub's Attestations API (fetch with `gh attestation download --repo <repo> --digest sha256:<digest>`);
+  `cosign attest-blob` writes to the public Rekor log and produces a local `.bundle` file.
+  Once you have the bundle, `cosign verify-blob-attestation --bundle` works for both.
 - `--certificate-identity` matches the Subject Alternative Name (SAN) of the Fulcio cert —
   typically the workflow file + ref (branch or tag). A branch ref is a moving target; for
   immutable pinning use a tag ref or add `--certificate-github-workflow-sha` to lock to a
