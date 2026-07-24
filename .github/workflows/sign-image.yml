@@ -120,7 +120,6 @@ jobs:
             ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
             | head -1 \
             | jq -r '.Cert' \
-            | base64 -d \
             | openssl x509 -noout -text
           echo "::endgroup::"
 
