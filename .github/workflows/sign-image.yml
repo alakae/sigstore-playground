@@ -113,6 +113,17 @@ jobs:
           cosign tree ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }}
           echo "::endgroup::"
 
+      - name: Show signing certificate (Fulcio extensions)
+        run: |
+          echo "::group::Certificate (full — including Fulcio extensions)"
+          cosign download signature \
+            ghcr.io/${{ github.repository }}@${{ needs.build-and-sign.outputs.digest }} \
+            | head -1 \
+            | jq -r '.Cert' \
+            | base64 -d \
+            | openssl x509 -noout -text
+          echo "::endgroup::"
+
       - name: Verify SLSA provenance (gh)
         env:
           GH_TOKEN: ${{ github.token }}

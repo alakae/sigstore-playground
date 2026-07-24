@@ -68,6 +68,6 @@ jobs:
           echo "https://search.sigstore.dev/?logIndex=$(cat test.txt.bundle | jq -r '.verificationMaterial.tlogEntries[0].logIndex')"
           echo "::endgroup::"
 
-          echo "::group::Certificate: identity + validity"
-          cat test.txt.bundle | jq -r '.verificationMaterial.certificate.rawBytes' | base64 -d | openssl x509 -inform DER -noout -ext subjectAltName -dates
+          echo "::group::Certificate (full — including Fulcio extensions)"
+          cat test.txt.bundle | jq -r '.verificationMaterial.certificate.rawBytes' | base64 -d | openssl x509 -inform DER -noout -text
           echo "::endgroup::"
